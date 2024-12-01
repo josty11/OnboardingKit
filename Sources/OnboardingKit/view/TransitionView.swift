@@ -13,6 +13,10 @@ class TransitionView: UIView {
     private let viewTintColor: UIColor
     private var index: Int = -1
     
+    var slideIndex: Int {
+        return index
+    }
+    
     private lazy var imageView: UIImageView = {
         let view = UIImageView()
         view.contentMode = .scaleAspectFill
@@ -76,13 +80,18 @@ class TransitionView: UIView {
     private func showNext() {
         let nextImage: UIImage
         let nextTitle: String
+        let nextBarView: AnimatedBarView
+        
         if  slides.indices.contains(index + 1) {
             nextImage = slides[index + 1].image
             nextTitle = slides[index + 1].title
+            nextBarView = barViews[index + 1]
             index += 1
         } else {
+            barViews.forEach({ $0.reset() })
             nextImage = slides[0].image
             nextTitle = slides[0].title
+            nextBarView = barViews[0]
             index = 0
         }
         
@@ -96,7 +105,23 @@ class TransitionView: UIView {
             completion: nil)
         
         titleView.setTitle(text: nextTitle)
-
+        nextBarView.startAnimating()
+    }
+    
+    func handleTap(direction: Direction) {
+        switch direction {
+        case .left:
+            barViews[index].reset()
+            if barViews.indices.contains(index - 1) {
+                barViews[index - 1].reset()
+            }
+            index -= 2
+        case .right:
+            barViews[index].complete()
+        }
+        timer?.cancel()
+        timer = nil
+        start()
     }
     
     private func buildTimerIfNeeded() {

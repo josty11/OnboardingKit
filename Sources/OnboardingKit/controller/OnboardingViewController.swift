@@ -10,6 +10,8 @@ import UIKit
 class OnboardingViewController: UIViewController {
     private let slides: [Slide]
     private let tintColor: UIColor
+    var nextButtonDidTap: ((Int) -> Void)?
+    var getStartedButtonDidTap: (() -> Void)?
     
     private lazy var transitionView: TransitionView = {
         let view = TransitionView(slides: slides, viewTintColor: tintColor)
@@ -18,12 +20,13 @@ class OnboardingViewController: UIViewController {
     
     private lazy var buttonContainerView: ButtonContainerView = {
         let view = ButtonContainerView(tintColor: tintColor)
-        view.nextButtonDidTap = {
-            print("Next Button tapped")
+        view.nextButtonDidTap = { [weak self] in
+            guard let self = self else { return }
+            self.nextButtonDidTap?(self.transitionView.slideIndex)
+            self.transitionView.handleTap(direction: .right)
+            
         }
-        view.getStartedButtonDidTap = {
-            print("Get started Button tapped")
-        }
+        view.getStartedButtonDidTap = getStartedButtonDidTap
         return view
     }()
     
@@ -33,6 +36,25 @@ class OnboardingViewController: UIViewController {
         return view
     }()
     
+    private func setupGesture() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(viewDidTap(_:)))
+        transitionView.addGestureRecognizer(tapGesture)
+    }
+    
+    @objc private func viewDidTap(_ tap: UITapGestureRecognizer) {
+        let point = tap.location(in: view)
+        let midPoint = view.frame.size.width / 2
+        if point.x > midPoint {
+            transitionView.handleTap(direction: .right)
+        } else {
+            transitionView.handleTap(direction: .left)
+        }
+    }
+    
+    func stopAnimation() {
+        transitionView.stop()
+    }
+    //MARK: - Init
     init(slides: [Slide], tintColor: UIColor) {
         self.slides = slides
         self.tintColor = tintColor
@@ -47,6 +69,7 @@ class OnboardingViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
+        setupGesture()
     }
     
     override func viewDidAppear(_ animated: Bool) {
